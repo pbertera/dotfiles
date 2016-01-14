@@ -132,13 +132,13 @@ ldap(){
         -e LDAP_ORGANISATION="My Mega Corporation"\
         -e LDAP_ROOTPASS=1234\
         -p 1081:80\
-        -p 389:389\
+        -p 1389:389\
         --name=$name\
         pbertera/ldapserver
     
     # NAT the local port 1080 to the container:80
     docker-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
-    docker-machine-fwd -i $ip -h 389 -n ${name}_ldap 389
+    docker-machine-fwd -i $ip -h 1389 -n ${name}_ldap 389
     
     echo "===================================================="
     echo "== Container name: ldap                           =="
