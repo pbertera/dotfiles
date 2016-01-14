@@ -142,6 +142,16 @@ then
     RULE_NAME="${PROTOCOL}${GUEST_PORT}"
 fi
 
+if [ -z "$HOST_PORT" ]
+then
+    HOST_PORT=$GUEST_PORT
+fi
+
+if [ "$HOST_PORT" -lt "1024" ]
+then
+    echo "Docker Machine doesn't support NAT of port < 1024, sorry."
+    exit -1
+fi
 
 VBoxManage controlvm ${DOCKER_MACHINE_NAME} natpf1 "$RULE_NAME,$PROTOCOL,$HOST_IP,$HOST_PORT,,$GUEST_PORT"
 if [ $? -eq 0 ]
