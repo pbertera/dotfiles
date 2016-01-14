@@ -1,0 +1,151 @@
+#!/bin/bash
+# Bash wrappers for docker run commands
+
+
+#
+# Helper Functions
+#
+dcleanup(){
+    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null
+    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null
+}
+
+del_stopped(){
+    local name=$1
+    local state=$(docker inspect --format "{{.State.Running}}" $name 2>/dev/null)
+
+    if [[ "$state" == "false" ]]; then
+        docker rm $name
+    fi
+}
+
+is_running(){
+    local name=$1
+    local state=$(docker inspect --format "{{.State.Running}}" $name 2>/dev/null)
+    
+    if [[ "$state" == "true" ]]; then
+        return 0
+    else
+        return -1
+    fi
+}
+
+relies_on(){
+    local containers=$@
+
+    for container in $containers; do
+        local state=$(docker inspect --format "{{.State.Running}}" $container 2>/dev/null)
+
+        if [[ "$state" == "false" ]] || [[ "$state" == "" ]]; then
+            echo "$container is not running, starting it for you."
+            $container
+        fi
+    done
+}
+
+# retrieve the default network interface from the routing table
+get_default_iface(){
+    route get default | grep interface| sed -e 's/.*:\ //'
+}
+
+# retrieve the ip addr of an interface
+get_ip_addr(){
+    ifconfig $1 |grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' 
+}
+
+get_default_addr(){
+    get_ip_addr $(get_default_iface)
+}
+
+bailout(){
+    echo $@
+}
+
+syslog(){
+    local ip
+    if [[ -z $1 ]]; then
+        ip=$(get_default_addr)
+    else
+        ip=$1
+    fi
+    
+    if is_running syslog; then 
+        bailout "Container syslog is already running"
+        return
+    fi
+
+    del_stopped syslog
+
+    # Remove the NAT rules
+    docker-machine-fwd -d syslog_http >/dev/null 2>&1
+    docker-machine-fwd -d syslog_syslog >/dev/null 2>&1
+    
+    docker run -d\
+        -e SYSLOG_USERNAME=admin\
+        -e SYSLOG_PASSWORD=1234\
+        -p 1080:80\
+        -p 514:514/udp\
+        --name=syslog\
+        pbertera/syslogserver
+    
+    # NAT the local port 1080 to the container:80
+    docker-machine-fwd -i $ip -h 1080 -n syslog_http 1080
+    docker-machine-fwd -i $ip -h 1514 -n syslog_syslog -p udp 514
+    
+    echo "===================================================="
+    echo "== Container name: syslog                         =="
+    echo "== Web GUI Username: admin                        =="
+    echo "== Web GUI Password: 1234                         =="
+    echo "== Listening on:                                  =="
+    echo "==     HTTP:   $ip:1080/tcp                       =="
+    echo "==     SYSLOG: $ip:1514/udp                       =="
+    echo "===================================================="
+}
+
+syslogtail(){
+    relies_on syslog
+    docker exec -it syslog tail -f /var/log/net/syslog.log
+}
+
+ldap(){
+    local ip
+    local name=ldap
+    if [[ -z $1 ]]; then
+        ip=$(get_default_addr)
+    else
+        ip=$1
+    fi
+    
+    if is_running $name; then 
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    # Remove the NAT rules
+    docker-machine-fwd -d ${name}_http >/dev/null 2>&1
+    docker-machine-fwd -d ${name}_ldap >/dev/null 2>&1
+    
+    docker run -d\
+        -e LDAP_DOMAIN=example.com\
+        -e LDAP_ORGANISATION="My Mega Corporation"\
+        -e LDAP_ROOTPASS=1234\
+        -p 1081:80\
+        -p 389:389\
+        --name=$name\
+        pbertera/ldapserver
+    
+    # NAT the local port 1080 to the container:80
+    docker-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
+    docker-machine-fwd -i $ip -h 389 -n ${name}_ldap 389
+    
+    echo "===================================================="
+    echo "== Container name: ldap                           =="
+    echo "== LDAP domain: example.com                       =="
+    echo "== LDAP admin password: 1234                      =="
+    echo "== Listening on:                                  =="
+    echo "==     HTTP:      $ip:1081/tcp                    =="
+    echo "==     LDAP:      $ip:389/tcp                     =="
+    echo "===================================================="
+}
