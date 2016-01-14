@@ -62,23 +62,23 @@ bailout(){
 }
 
 syslog(){
-    local ip
-    if [[ -z $1 ]]; then
+    local name=syslog
+    if [[ -z $CONTAINER_BIND_ADDR ]]; then
         ip=$(get_default_addr)
     else
-        ip=$1
+        ip=$CONTAINER_BIND_ADDR
     fi
     
-    if is_running syslog; then 
-        bailout "Container syslog is already running"
+    if is_running $name; then 
+        bailout "Container $name is already running"
         return
     fi
 
-    del_stopped syslog
+    del_stopped $name
 
     # Remove the NAT rules
-    docker-machine-fwd -d syslog_http >/dev/null 2>&1
-    docker-machine-fwd -d syslog_syslog >/dev/null 2>&1
+    docker-machine-fwd -d ${name}_http >/dev/null 2>&1
+    docker-machine-fwd -d ${name}_syslog >/dev/null 2>&1
     
     docker run -d\
         -e SYSLOG_USERNAME=admin\
@@ -86,14 +86,14 @@ syslog(){
         -p 1080:80\
         -p 514:514/udp\
         --name=syslog\
-        pbertera/syslogserver
+        pbertera/syslogserver $@
     
     # NAT the local port 1080 to the container:80
-    docker-machine-fwd -i $ip -h 1080 -n syslog_http 1080
-    docker-machine-fwd -i $ip -h 1514 -n syslog_syslog -p udp 514
+    docker-machine-fwd -i $ip -h 1080 -n ${name}_http 1080
+    docker-machine-fwd -i $ip -h 1514 -n ${name}_syslog -p udp 514
     
     echo "===================================================="
-    echo "== Container name: syslog                         =="
+    echo "== Container name: $name                          =="
     echo "== Web GUI Username: admin                        =="
     echo "== Web GUI Password: 1234                         =="
     echo "== Listening on:                                  =="
@@ -108,12 +108,11 @@ syslogtail(){
 }
 
 ldap(){
-    local ip
     local name=ldap
-    if [[ -z $1 ]]; then
+    if [[ -z $CONTAINER_BIND_ADDR ]]; then
         ip=$(get_default_addr)
     else
-        ip=$1
+        ip=$CONTAINER_BIND_ADDR
     fi
     
     if is_running $name; then 
@@ -134,7 +133,7 @@ ldap(){
         -p 1081:80\
         -p 1389:389\
         --name=$name\
-        pbertera/ldapserver
+        pbertera/ldapserver $@
     
     # NAT the local port 1080 to the container:80
     docker-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
