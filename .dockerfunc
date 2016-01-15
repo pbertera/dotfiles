@@ -50,7 +50,7 @@ get_default_iface(){
 
 # retrieve the ip addr of an interface
 get_ip_addr(){
-    ifconfig $1 |grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' 
+    ifconfig $1 |grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | head -n 1 | grep -Eo '([0-9]*\.){3}[0-9]*'
 }
 
 get_default_addr(){
@@ -97,8 +97,9 @@ syslog(){
     echo "== Web GUI Username: admin                        =="
     echo "== Web GUI Password: 1234                         =="
     echo "== Listening on:                                  =="
-    echo "==     HTTP:   $ip:1080/tcp                       =="
-    echo "==     SYSLOG: $ip:1514/udp                       =="
+    echo "==     HTTP:    http://$ip:1080                   =="
+    echo "==     SYSLOG:  $ip:1514/udp                      =="
+    echo "==     Logfile: http://$ip:1080/syslog.log        =="
     echo "===================================================="
 }
 
@@ -144,7 +145,7 @@ ldap(){
     echo "== LDAP domain: example.com                       =="
     echo "== LDAP admin password: 1234                      =="
     echo "== Listening on:                                  =="
-    echo "==     HTTP:      $ip:1081/tcp                    =="
+    echo "==     HTTP:      http://$ip:1081/tcp             =="
     echo "==     LDAP:      $ip:389/tcp                     =="
     echo "===================================================="
 }
