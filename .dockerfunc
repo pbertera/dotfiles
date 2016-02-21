@@ -76,8 +76,25 @@ easy-rsa(){
         env_file="--env-file $EASY_RSA_PKY/vars"
     fi
     # EASY_RSA_PKY must be a full path
-    docker run --rm -it -v $EASY_RSA_PKY:/easy-rsai ${env_file} --name ${name} pbertera/easy-rsa $@
+    docker run --rm -it -v $EASY_RSA_PKY:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
+}
 
+easy-rsa-root(){
+    local name=easy-rsa-root
+    local env_file=""
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    if [ -f "$EASY_RSA_ROOT_PKY/vars" ]; then
+        env_file="--env-file $EASY_RSA_ROOT_PKY/vars"
+    fi
+    # EASY_RSA_PKY must be a full path
+    docker run --rm -it -v $EASY_RSA_ROOT_PKY:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
 }
 
 syslog(){
