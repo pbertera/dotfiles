@@ -1,9 +1,40 @@
 #!/usr/bin/python
 
-import sys
-import xml.dom.minidom
+from xml.dom import minidom
+from xml.parsers.expat import ExpatError
+import sys, re
 
-xml = xml.dom.minidom.parse(sys.argv[1]) # or xml.dom.minidom.parseString(xml_string)
-pretty_xml_as_string = xml.toprettyxml()
+# Edit the following to control pretty printing
+indent = "  "
+newl = ""
+encoding = "UTF-8"
 
-print pretty_xml_as_string
+# Regular expression to find trailing spaces before a newline
+trails=re.compile(' *\n')
+
+try:
+  if len(sys.argv) == 1:
+      # Parse the XML - from stdin
+      dom=minidom.parse(sys.stdin)
+  elif len(sys.argv) == 2:
+      # Parse the XML - from filename
+      dom=minidom.parse(sys.argv[1])
+  else:
+      print('Usage:') 
+      print('    %s <filename>' % sys.argv[0])
+      print('If <filename> is missing %s expects the XML in standard input' % sys.argv[0])
+      sys.exit(-1)
+
+  # First-pass Pretty Print of the XML
+  prettyXML=dom.toprettyxml(indent,newl,encoding)
+  
+  # Further clean ups
+  prettyXML=prettyXML.replace("\t","")
+  prettyXML=prettyXML.replace('"?><','"?>\n<')
+  prettyXML=re.sub(trails,"\n",prettyXML)
+  
+  # Write XML to stdout
+  sys.stdout.write(prettyXML)
+  sys.stdout.write('\n')
+except ExpatError as (expatError):
+  sys.stderr.write("Bad XML: line " + str(expatError.lineno) + " offset " + str(expatError.offset)+"\n")

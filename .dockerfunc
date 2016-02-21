@@ -149,3 +149,8 @@ ldap(){
     echo "==     LDAP:      $ip:389/tcp                     =="
     echo "===================================================="
 }
+
+irssi(){
+    docker run -it --name irssi -e TERM --rm --log-driver=none \
+        -v $HOME/.irssi:/home/user/.irssi:rw irssi
+}

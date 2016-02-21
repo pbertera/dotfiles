@@ -1,11 +1,18 @@
 #!/bin/bash
 
-# URL Encode
+# date-detailed
+datedetails() {
+    echo "Now:              $(date)"
+    echo "Week of the year: $(date +%W)"
+    echo "Month calendar:   "
+    cal
+}
+
+# URL Encode a string
 urlencode() {
   local string="${1}"
   local strlen=${#string}
   local encoded=""
-
   for (( pos=0 ; pos<strlen ; pos++ )); do
      c=${string:$pos:1}
      case "$c" in [-_.~a-zA-Z0-9] ) o="${c}" ;;
@@ -14,6 +21,12 @@ urlencode() {
      encoded+="${o}"
   done
   echo "${encoded}"
+}
+
+# URL Decode a string
+urldecode() {
+    local url_encoded="${1//+/ }"
+    printf '%b' "${url_encoded//%/\\x}"
 }
 
 # Simple calculator
