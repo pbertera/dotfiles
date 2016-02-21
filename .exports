@@ -9,6 +9,8 @@ if [ "$(docker-machine status $DOCKER_MACHINE_NAME 2>&1)" != "Running" ];then
 fi
 eval "$(docker-machine env $DOCKER_MACHINE_NAME)"
 
+export EASY_RSA_PKY=$HOME/.easy-rsa
+
 #PATH
 export PATH=$PATH:$HOME/bin
 # GPG TTY
