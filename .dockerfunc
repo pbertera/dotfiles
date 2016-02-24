@@ -1,6 +1,8 @@
 #!/bin/bash
 # Bash wrappers for docker run commands
 
+#TODO:
+# docker run -it -v /Users/pietro/.nginx/server.conf:/etc/nginx/conf.d/default.conf:ro -v /Users/pietro/.nginx/certs/:/etc/nginx/certs:ro -v /Users/pietro/nginx-www/:/var/www -v /Users/pietro/nginx-www-ssl/:/var/www-ssl -p 8443:443 -p 80:80 nginx:latest
 
 #
 # Helper Functions
@@ -95,6 +97,19 @@ easy-rsa-root(){
     fi
     # EASY_RSA_PKY must be a full path
     docker run --rm -it -v $EASY_RSA_ROOT_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
+}
+
+nmap(){
+    local name=nmap
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    docker run --rm -it --name ${name} pbertera/${name} $@ 
 }
 
 syslog(){

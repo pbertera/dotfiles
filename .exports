@@ -10,9 +10,9 @@ fi
 eval "$(docker-machine env $DOCKER_MACHINE_NAME)"
 
 # Easy RSA intermediate
-export EASY_RSA_PKY=$HOME/.easy-rsa
+export EASY_RSA_PKI=$HOME/.easy-rsa
 # Easy RSA root
-export EASY_RSA_ROOT_PKY=$HOME/.easy-rsa-root
+export EASY_RSA_ROOT_PKI=$HOME/.easy-rsa-root
 
 #PATH
 export PATH=$PATH:$HOME/bin
