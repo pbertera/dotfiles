@@ -63,6 +63,30 @@ bailout(){
     echo $@
 }
 
+netperf(){
+    local name=netperf
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run --rm -it --name ${name} pbertera/netperf client $@
+}
+
+netserver(){
+    local name=netserver
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run --rm -it --name ${name} pbertera/netperf server $@
+}
+
 easy-rsa(){
     local name=easy-rsa
     local env_file=""
