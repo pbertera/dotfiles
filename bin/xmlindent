@@ -6,7 +6,7 @@ import sys, re
 
 # Edit the following to control pretty printing
 indent = "  "
-newl = ""
+newl = "\n"
 encoding = "UTF-8"
 
 # Regular expression to find trailing spaces before a newline
@@ -27,7 +27,7 @@ try:
 
   # First-pass Pretty Print of the XML
   prettyXML=dom.toprettyxml(indent,newl,encoding)
-  
+
   # Further clean ups
   prettyXML=prettyXML.replace("\t","")
   prettyXML=prettyXML.replace('"?><','"?>\n<')
