@@ -63,6 +63,19 @@ bailout(){
     echo $@
 }
 
+mz(){
+    local name=mz
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run --rm -it --name ${name} pbertera/${name} $@
+
+}
+
 hping3(){
     local name=hping3
 
