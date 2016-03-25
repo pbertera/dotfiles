@@ -72,7 +72,7 @@ convert(){
     fi
 
     del_stopped $name
-    docker run -it -v --rm --name convert $(PWD):/data pbertera/imagemagick $@
+    docker run -it --rm --name convert -v $(PWD):/data pbertera/imagemagick $@
 }
 
 mz(){
