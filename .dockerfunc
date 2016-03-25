@@ -63,6 +63,18 @@ bailout(){
     echo $@
 }
 
+convert(){
+    local name=convert
+    
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run -it -v --rm --name convert $(PWD):/data pbertera/imagemagick $@
+}
+
 mz(){
     local name=mz
 
