@@ -1,13 +1,14 @@
 #!/bin/bash
 
+# Disable docker-machine I'm on Mac Docker now ;)
 # Docker machine name
-export DOCKER_MACHINE_NAME="default"
-if [ "$(docker-machine status $DOCKER_MACHINE_NAME 2>&1)" != "Running" ];then
-    echo "Starting Docker Machine '$DOCKER_MACHINE_NAME'... "
-    docker-machine start $DOCKER_MACHINE_NAME
-    echo "... Done"
-fi
-eval "$(docker-machine env $DOCKER_MACHINE_NAME)"
+#export DOCKER_MACHINE_NAME="default"
+#if [ "$(docker-machine status $DOCKER_MACHINE_NAME 2>&1)" != "Running" ];then
+#    echo "Starting Docker Machine '$DOCKER_MACHINE_NAME'... "
+#    docker-machine start $DOCKER_MACHINE_NAME
+#    echo "... Done"
+#fi
+# eval "$(docker-machine env $DOCKER_MACHINE_NAME)"
 
 # Easy RSA intermediate
 export EASY_RSA_PKI=$HOME/.easy-rsa

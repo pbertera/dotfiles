@@ -190,8 +190,8 @@ syslog(){
     del_stopped $name
 
     # Remove the NAT rules
-    docker-machine-fwd -d ${name}_http >/dev/null 2>&1
-    docker-machine-fwd -d ${name}_syslog >/dev/null 2>&1
+    #docker-machine-fwd -d ${name}_http >/dev/null 2>&1
+    #docker-machine-fwd -d ${name}_syslog >/dev/null 2>&1
     
     docker run -d\
         -e SYSLOG_USERNAME=admin\
@@ -202,8 +202,8 @@ syslog(){
         pbertera/syslogserver $@
     
     # NAT the local port 1080 to the container:80
-    docker-machine-fwd -i $ip -h 1080 -n ${name}_http 1080
-    docker-machine-fwd -i $ip -h 1514 -n ${name}_syslog -p udp 514
+    #docker-machine-fwd -i $ip -h 1080 -n ${name}_http 1080
+    #docker-machine-fwd -i $ip -h 1514 -n ${name}_syslog -p udp 514
     
     echo "===================================================="
     echo "== Container name: $name                          =="
@@ -237,8 +237,8 @@ ldap(){
     del_stopped $name
 
     # Remove the NAT rules
-    docker-machine-fwd -d ${name}_http >/dev/null 2>&1
-    docker-machine-fwd -d ${name}_ldap >/dev/null 2>&1
+    #docker-machine-fwd -d ${name}_http >/dev/null 2>&1
+    #docker-machine-fwd -d ${name}_ldap >/dev/null 2>&1
     
     docker run -d\
         -e LDAP_DOMAIN=example.com\
@@ -250,8 +250,8 @@ ldap(){
         pbertera/ldapserver $@
     
     # NAT the local port 1080 to the container:80
-    docker-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
-    docker-machine-fwd -i $ip -h 1389 -n ${name}_ldap 389
+    #docker-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
+    #docker-machine-fwd -i $ip -h 1389 -n ${name}_ldap 389
     
     echo "===================================================="
     echo "== Container name: ldap                           =="
