@@ -1,9 +1,6 @@
 #!/bin/bash
 # Bash wrappers for docker run commands
 
-#TODO:
-# docker run -it -v /Users/pietro/.nginx/server.conf:/etc/nginx/conf.d/default.conf:ro -v /Users/pietro/.nginx/certs/:/etc/nginx/certs:ro -v /Users/pietro/nginx-www/:/var/www -v /Users/pietro/nginx-www-ssl/:/var/www-ssl -p 8443:443 -p 80:80 nginx:latest
-
 #
 # Helper Functions
 #
@@ -61,6 +58,20 @@ get_default_addr(){
 
 bailout(){
     echo $@
+}
+
+nginx() {
+    local name=nginx
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run -it -v ${NGINX_HOME}/server.conf:/etc/nginx/conf.d/default.conf:ro \
+        -v ${NGINX_HOME}/certs/:/etc/nginx/certs:ro \
+        -v ${NGINX_HOME}/nginx-www/:/var/www \
+        -v ${NGINX_HOME}/nginx-www-ssl/:/var/www-ssl -p 8443:443 -p 80:80 nginx:latest
 }
 
 convert(){
