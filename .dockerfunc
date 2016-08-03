@@ -74,6 +74,19 @@ nginx() {
         -v ${NGINX_HOME}/nginx-www-ssl/:/var/www-ssl -p 8443:443 -p 80:80 nginx:latest
 }
 
+sipp(){
+    local name=sipp
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run -it --rm --name sipp -v $(PWD):/data pbertera/sipp $@
+}
+
+
 convert(){
     local name=convert
     
