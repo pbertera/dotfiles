@@ -60,6 +60,23 @@ bailout(){
     echo $@
 }
 
+pdns() {
+    local name=pdns
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    docker run -it --name $name -e API_KEY=MySecretKey -e WEB_PORT=8081 -v ${PDNS_DB}:/data/pdns.db -p 8081:8081 -p 53:53 -p 53:53/udp pbertera/${name}
+}
+
+pdns.py(){
+    relies_on pdns
+    docker exec -it pdns pdns.py $@
+}
+
 nginx() {
     local name=nginx
     if is_running $name; then
@@ -300,6 +317,11 @@ ldap(){
 }
 
 irssi(){
+    local name=irssi
+    if is_running $name; then 
+        bailout "Container $name is already running"
+        return
+    fi
     docker run -it --name irssi -e TERM --rm --log-driver=none \
         -v $HOME/.irssi:/home/user/.irssi:rw irssi
 }

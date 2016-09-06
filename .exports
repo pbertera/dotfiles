@@ -36,3 +36,4 @@ export HISTIGNORE=" *:ls:cd:cd -:pwd:exit:date:* --help:* -h:pony:pony add *:pon
 export LANG="en_US.UTF-8";
 export LC_ALL="en_US.UTF-8";
 
+export PDNS_DB=$HOME/.pdns/pdns.db
