@@ -318,10 +318,14 @@ ldap(){
 
 irssi(){
     local name=irssi
+    
     if is_running $name; then 
         bailout "Container $name is already running"
         return
     fi
+    
+    del_stopped $name
+
     docker run -it --name irssi -e TERM --rm --log-driver=none \
         -v $HOME/.irssi:/home/user/.irssi:rw irssi
 }
