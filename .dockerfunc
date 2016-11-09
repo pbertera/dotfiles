@@ -74,7 +74,7 @@ pdns() {
 
 pdns.py(){
     relies_on pdns
-    docker exec -it pdns pdns.py $@
+    docker exec -it pdns pdns.py "$@"
 }
 
 nginx() {
