@@ -77,6 +77,30 @@ pdns.py(){
     docker exec -it pdns pdns.py "$@"
 }
 
+sox() {
+    local name=sox
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    docker run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox sox $@ 
+}
+
+ffmpeg() {
+    local name=ffmpeg
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    docker run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox ffmpeg $@
+}
+
 nginx() {
     local name=nginx
     if is_running $name; then
