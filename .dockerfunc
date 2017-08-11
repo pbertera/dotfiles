@@ -60,6 +60,18 @@ bailout(){
     echo $@
 }
 
+apachephp(){
+    local name=apachephp
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+
+    docker run -it --rm --name $name -p 8080:80 -v `pwd`:/var/www/html/ php:7.0-apache
+}
+
 pdns() {
     local name=pdns
     if is_running $name; then
