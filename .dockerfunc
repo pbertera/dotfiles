@@ -79,6 +79,12 @@ pdns() {
         return
     fi
 
+    if [ ! -f ${PDNS_DB} ]; then
+        echo "DB ${PDNS_DB} not found, creating.."
+        mkdir $(dirname ${PDNS_DB})
+        touch ${PDNS_DB}
+        echo "..done"
+    fi
     del_stopped $name
 
     docker run -it --name $name -e API_KEY=MySecretKey -e WEB_PORT=8081 -v ${PDNS_DB}:/data/pdns.db -p 8081:8081 -p 53:53 -p 53:53/udp pbertera/${name}
