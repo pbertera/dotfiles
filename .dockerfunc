@@ -145,6 +145,18 @@ sipp(){
     docker run -it --rm --name sipp -v $(PWD):/data pbertera/sipp $@
 }
 
+text2pcap(){
+    local name=text2pcap
+
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    del_stopped $name
+    docker run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
+}
+
 sngrep(){
     local name=sngrep
 
