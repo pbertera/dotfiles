@@ -13,6 +13,7 @@ unset file
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
+alias bas64='python -m base64'
 
 # Source global definitions
 if [ -f /etc/bashrc ]; then
