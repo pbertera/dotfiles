@@ -1,4 +1,3 @@
-execute pathogen#infect()
 syntax on
 set ts=4
 set tabstop=4

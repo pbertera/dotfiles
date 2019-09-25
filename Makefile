@@ -3,6 +3,7 @@
 all: bin dotfiles
 
 bin:
+	mkdir -p $(HOME)/bin
 	# add aliases for things in bin
 	for file in $(shell find $(CURDIR)/bin -type f -not -name ".*.swp"); do \
 		f=$$(basename $$file); \
