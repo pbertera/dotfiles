@@ -405,5 +405,17 @@ asterisk(){
 
     del_stopped $name
 
-    docker run -it -v ${HOME}/.asterisk:/etc/asterisk -p 5060:5060/udp -p 10000-10010:10000-10010/udp pbertera/asterisk $@
+    docker run -it --network host -v ${HOME}/.asterisk:/etc/asterisk -p 5060:5060/udp -p 10000-10010:10000-10010/udp pbertera/asterisk $@
+}
+
+termshark(){
+    local name=termshark
+    if is_running $name; then
+        bailout "Container $name is already running"
+        return
+    fi
+
+    docker run -it --privileged --net host pbertera/termshark
+
+    del_stopped $name
 }
