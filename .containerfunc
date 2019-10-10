@@ -1,26 +1,30 @@
 #!/bin/bash
-# Bash wrappers for docker run commands
+# Bash wrappers for containers run commands
+
+. ~/.containers.rc
+
+RUNTIME=${RUNTIME:-podman}
 
 #
 # Helper Functions
 #
 dcleanup(){
-    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null
-    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null
+    ${RUNTIME} rm -v $(${RUNTIME} ps --filter status=exited -q 2>/dev/null) 2>/dev/null
+    ${RUNTIME} rmi $(${RUNTIME} images --filter dangling=true -q 2>/dev/null) 2>/dev/null
 }
 
 del_stopped(){
     local name=$1
-    local state=$(docker inspect --format "{{.State.Running}}" $name 2>/dev/null)
+    local state=$(${RUNTIME} inspect --format "{{.State.Running}}" $name 2>/dev/null)
 
     if [[ "$state" == "false" ]]; then
-        docker rm $name
+        ${RUNTIME} rm $name
     fi
 }
 
 is_running(){
     local name=$1
-    local state=$(docker inspect --format "{{.State.Running}}" $name 2>/dev/null)
+    local state=$(${RUNTIME} inspect --format "{{.State.Running}}" $name 2>/dev/null)
     
     if [[ "$state" == "true" ]]; then
         return 0
@@ -33,7 +37,7 @@ relies_on(){
     local containers=$@
 
     for container in $containers; do
-        local state=$(docker inspect --format "{{.State.Running}}" $container 2>/dev/null)
+        local state=$(${RUNTIME} inspect --format "{{.State.Running}}" $container 2>/dev/null)
 
         if [[ "$state" == "false" ]] || [[ "$state" == "" ]]; then
             echo "$container is not running, starting it for you."
@@ -42,18 +46,8 @@ relies_on(){
     done
 }
 
-# retrieve the default network interface from the routing table
-get_default_iface(){
-    route get default | grep interface| sed -e 's/.*:\ //'
-}
-
-# retrieve the ip addr of an interface
-get_ip_addr(){
-    ifconfig $1 |grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | head -n 1 | grep -Eo '([0-9]*\.){3}[0-9]*'
-}
-
 get_default_addr(){
-    get_ip_addr $(get_default_iface)
+    ip route get 8.8.8.8 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}'
 }
 
 bailout(){
@@ -69,7 +63,7 @@ apachephp(){
 
     del_stopped $name
 
-    docker run -it --rm --name $name -p 8080:80 -v `pwd`:/var/www/html/ php:7.0-apache
+    ${RUNTIME} run -it --rm --name $name -p 8080:80 -v `pwd`:/var/www/html/ php:7.0-apache
 }
 
 pdns() {
@@ -87,12 +81,12 @@ pdns() {
     fi
     del_stopped $name
 
-    docker run -it --name $name -e API_KEY=MySecretKey -e WEB_PORT=8081 -v ${PDNS_DB}:/data/pdns.db -p 8081:8081 -p 53:53 -p 53:53/udp pbertera/${name}
+    ${RUNTIME} run -it --name $name -e API_KEY=MySecretKey -e WEB_PORT=8081 -v ${PDNS_DB}:/data/pdns.db -p 8081:8081 -p 53:53 -p 53:53/udp pbertera/${name}
 }
 
 pdns.py(){
     relies_on pdns
-    docker exec -it pdns pdns.py "$@"
+    ${RUNTIME} exec -it pdns pdns.py "$@"
 }
 
 sox() {
@@ -104,7 +98,7 @@ sox() {
 
     del_stopped $name
 
-    docker run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox sox $@ 
+    ${RUNTIME} run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox sox $@ 
 }
 
 ffmpeg() {
@@ -116,7 +110,7 @@ ffmpeg() {
 
     del_stopped $name
 
-    docker run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox ffmpeg $@
+    ${RUNTIME} run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox ffmpeg $@
 }
 
 nginx() {
@@ -127,7 +121,7 @@ nginx() {
     fi
 
     del_stopped $name
-    docker run -it -v ${NGINX_HOME}/server.conf:/etc/nginx/conf.d/default.conf:ro \
+    ${RUNTIME} run -it -v ${NGINX_HOME}/server.conf:/etc/nginx/conf.d/default.conf:ro \
         -v ${NGINX_HOME}/certs/:/etc/nginx/certs:ro \
         -v ${NGINX_HOME}/nginx-www/:/var/www \
         -v ${NGINX_HOME}/nginx-www-ssl/:/var/www-ssl -p 8443:443 -p 80:80 nginx:latest
@@ -142,7 +136,7 @@ sipp(){
     fi
 
     del_stopped $name
-    docker run -it --rm --name sipp -v $(PWD):/data pbertera/sipp $@
+    ${RUNTIME} run -it --rm --name sipp -v $(PWD):/data pbertera/sipp $@
 }
 
 text2pcap(){
@@ -154,7 +148,7 @@ text2pcap(){
     fi
 
     del_stopped $name
-    docker run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
+    ${RUNTIME} run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
 }
 
 asciidoctor(){
@@ -166,7 +160,7 @@ asciidoctor(){
     fi
 
     del_stopped $name
-    docker run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
+    ${RUNTIME} run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
 }
 
 sngrep(){
@@ -178,7 +172,7 @@ sngrep(){
     fi
 
     del_stopped $name
-    docker run -it --rm --name ${name} -v $(PWD):/data pbertera/${name} $@
+    ${RUNTIME} run -it --rm --name ${name} -v $(PWD):/data pbertera/${name} $@
 }
 
 
@@ -191,7 +185,7 @@ convert(){
     fi
 
     del_stopped $name
-    docker run -it --rm --name convert -v $(PWD):/data pbertera/imagemagick $@
+    ${RUNTIME} run -it --rm --name convert -v $(PWD):/data pbertera/imagemagick $@
 }
 
 mz(){
@@ -203,7 +197,7 @@ mz(){
     fi
 
     del_stopped $name
-    docker run --rm -it --name ${name} pbertera/${name} $@
+    ${RUNTIME} run --rm -it --name ${name} pbertera/${name} $@
 
 }
 
@@ -216,7 +210,7 @@ hping3(){
     fi
 
     del_stopped $name
-    docker run --rm -it --name ${name} pbertera/${name} $@
+    ${RUNTIME} run --rm -it --name ${name} pbertera/${name} $@
 
 }
 
@@ -229,7 +223,7 @@ netperf(){
     fi
 
     del_stopped $name
-    docker run --rm -it --name ${name} pbertera/netperf client $@
+    ${RUNTIME} run --rm -it --name ${name} pbertera/netperf client $@
 }
 
 netserver(){
@@ -241,7 +235,7 @@ netserver(){
     fi
 
     del_stopped $name
-    docker run --rm -it --name ${name} pbertera/netperf server $@
+    ${RUNTIME} run --rm -it --name ${name} pbertera/netperf server $@
 }
 
 easy-rsa(){
@@ -259,7 +253,7 @@ easy-rsa(){
         env_file="--env-file $EASY_RSA_PKI/vars"
     fi
     # EASY_RSA_PKY must be a full path
-    docker run --rm -it -v $EASY_RSA_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
+    ${RUNTIME} run --rm -it -v $EASY_RSA_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
 }
 
 easy-rsa-root(){
@@ -277,7 +271,7 @@ easy-rsa-root(){
         env_file="--env-file $EASY_RSA_ROOT_PKI/vars"
     fi
     # EASY_RSA_PKY must be a full path
-    docker run --rm -it -v $EASY_RSA_ROOT_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
+    ${RUNTIME} run --rm -it -v $EASY_RSA_ROOT_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
 }
 
 nmap(){
@@ -290,7 +284,7 @@ nmap(){
 
     del_stopped $name
 
-    docker run --rm -it --name ${name} pbertera/${name} $@ 
+    ${RUNTIME} run --rm -it --name ${name} pbertera/${name} $@ 
 }
 
 syslog(){
@@ -309,10 +303,10 @@ syslog(){
     del_stopped $name
 
     # Remove the NAT rules
-    #docker-machine-fwd -d ${name}_http >/dev/null 2>&1
-    #docker-machine-fwd -d ${name}_syslog >/dev/null 2>&1
+    #${RUNTIME}-machine-fwd -d ${name}_http >/dev/null 2>&1
+    #${RUNTIME}-machine-fwd -d ${name}_syslog >/dev/null 2>&1
     
-    docker run -d\
+    ${RUNTIME} run -d\
         -e SYSLOG_USERNAME=admin\
         -e SYSLOG_PASSWORD=1234\
         -p 1080:80\
@@ -321,8 +315,8 @@ syslog(){
         pbertera/syslogserver $@
     
     # NAT the local port 1080 to the container:80
-    #docker-machine-fwd -i $ip -h 1080 -n ${name}_http 1080
-    #docker-machine-fwd -i $ip -h 1514 -n ${name}_syslog -p udp 514
+    #${RUNTIME}-machine-fwd -i $ip -h 1080 -n ${name}_http 1080
+    #${RUNTIME}-machine-fwd -i $ip -h 1514 -n ${name}_syslog -p udp 514
     
     echo "===================================================="
     echo "== Container name: $name                          =="
@@ -337,7 +331,7 @@ syslog(){
 
 syslogtail(){
     relies_on syslog
-    docker exec -it syslog tail -f /var/log/net/syslog.log
+    ${RUNTIME} exec -it syslog tail -f /var/log/net/syslog.log
 }
 
 ldap(){
@@ -356,10 +350,10 @@ ldap(){
     del_stopped $name
 
     # Remove the NAT rules
-    #docker-machine-fwd -d ${name}_http >/dev/null 2>&1
-    #docker-machine-fwd -d ${name}_ldap >/dev/null 2>&1
+    #${RUNTIME}-machine-fwd -d ${name}_http >/dev/null 2>&1
+    #${RUNTIME}-machine-fwd -d ${name}_ldap >/dev/null 2>&1
     
-    docker run -d\
+    ${RUNTIME} run -d\
         -e LDAP_DOMAIN=example.com\
         -e LDAP_ORGANISATION="My Mega Corporation"\
         -e LDAP_ROOTPASS=1234\
@@ -369,8 +363,8 @@ ldap(){
         pbertera/ldapserver $@
     
     # NAT the local port 1080 to the container:80
-    #docker-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
-    #docker-machine-fwd -i $ip -h 1389 -n ${name}_ldap 389
+    #${RUNTIME}-machine-fwd -i $ip -h 1081 -n ${name}_http 1081
+    #${RUNTIME}-machine-fwd -i $ip -h 1389 -n ${name}_ldap 389
     
     echo "===================================================="
     echo "== Container name: ldap                           =="
@@ -392,7 +386,7 @@ irssi(){
     
     del_stopped $name
 
-    docker run -it --name irssi -e TERM --rm --log-driver=none \
+    ${RUNTIME} run -it --name irssi -e TERM --rm --log-driver=none \
         -v $HOME/.irssi:/home/user/.irssi:rw irssi
 }
 
@@ -405,7 +399,7 @@ asterisk(){
 
     del_stopped $name
 
-    docker run -it --network host -v ${HOME}/.asterisk:/etc/asterisk -p 5060:5060/udp -p 10000-10010:10000-10010/udp pbertera/asterisk $@
+    ${RUNTIME} run -it --network host -v ${HOME}/.asterisk:/etc/asterisk -p 5060:5060/udp -p 10000-10010:10000-10010/udp pbertera/asterisk $@
 }
 
 termshark(){
@@ -415,7 +409,7 @@ termshark(){
         return
     fi
 
-    docker run -it --privileged --net host pbertera/termshark
+    ${RUNTIME} run -it --privileged --net host pbertera/termshark
 
     del_stopped $name
 }
