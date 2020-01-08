@@ -1,6 +1,6 @@
-.PHONY: all bin dotfiles
+.PHONY: all bin dotfiles config
 
-all: bin dotfiles
+all: bin dotfiles config
 
 bin:
 	mkdir -p $(HOME)/bin
@@ -15,4 +15,10 @@ dotfiles:
 	for file in $(shell find $(CURDIR) -name ".*" -not -name ".gitignore" -not -name ".git" -not -name ".*.swp"); do \
 		f=$$(basename $$file); \
 		ln -sfn $$file $(HOME)/$$f; \
+	done
+
+config:
+	for file in $(shell find $(CURDIR)/config -type f -not -name ".*.swp"); do \
+		f=$$(basename $$file); \
+		ln -sf $$file $(HOME)/bin/$$f; \
 	done
