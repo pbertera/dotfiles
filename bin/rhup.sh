@@ -80,7 +80,7 @@ function setup {
 }
 
 function usage {
-    print red INFO $0 <up|down|status|getToken|refresh>
+    print red INFO $0 "<up|down|status|getToken|refresh>"
 }
 
 function status {
