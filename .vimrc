@@ -1,3 +1,6 @@
+execute pathogen#infect()
+syntax on
+filetype plugin indent on
 syntax on
 set ts=4
 set tabstop=4
