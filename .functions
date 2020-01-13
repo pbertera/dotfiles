@@ -186,3 +186,14 @@ v() {
 		vim "$@"
 	fi
 }
+
+# make a window transparent, argument is the transparency level
+trans() {
+
+    if [ $1 -ge 0 ] 2> /dev/null && [ $1 -le 10 ]; then
+        local T=$(printf '%X' $(($1 + 5)))
+        xprop -format _NET_WM_WINDOW_OPACITY 32c -set _NET_WM_WINDOW_OPACITY 0x${T}FFFFFFF
+    else
+        echo "ERROR: transparency level can be a value from 0 (full opacity) to 10 (max transparency)"
+    fi
+} 
