@@ -104,6 +104,14 @@ function status {
 action="$1"
 
 case "$action" in
+    vpnup)
+        setup
+        vpnUp
+        ;;
+    vpndown)
+        setup
+        vpnDown
+        ;;
     up)
         setup
         isVpnUp || vpnUp

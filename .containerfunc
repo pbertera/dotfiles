@@ -63,7 +63,7 @@ apachephp(){
 
     del_stopped $name
 
-    ${RUNTIME} run -it --rm --name $name -p 8080:80 -v `pwd`:/var/www/html/ php:7.0-apache
+    ${RUNTIME} run -it --rm --name $name -p 8080:80 -v `pwd`:/var/www/html/:Z php:7.0-apache
 }
 
 pdns() {
@@ -81,7 +81,7 @@ pdns() {
     fi
     del_stopped $name
 
-    ${RUNTIME} run -it --name $name -e API_KEY=MySecretKey -e WEB_PORT=8081 -v ${PDNS_DB}:/data/pdns.db -p 8081:8081 -p 53:53 -p 53:53/udp pbertera/${name}
+    ${RUNTIME} run -it --name $name -e API_KEY=MySecretKey -e WEB_PORT=8081 -v ${PDNS_DB}:/data/pdns.db:Z -p 8081:8081 -p 53:53 -p 53:53/udp pbertera/${name}
 }
 
 pdns.py(){
@@ -98,7 +98,7 @@ sox() {
 
     del_stopped $name
 
-    ${RUNTIME} run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox sox $@ 
+    ${RUNTIME} run --rm -it -v `pwd`:/tmp:Z pbertera/ffmpeg-sox sox $@ 
 }
 
 ffmpeg() {
@@ -110,7 +110,7 @@ ffmpeg() {
 
     del_stopped $name
 
-    ${RUNTIME} run --rm -it -v `pwd`:/tmp pbertera/ffmpeg-sox ffmpeg $@
+    ${RUNTIME} run --rm -it -v `pwd`:/tmp:Z pbertera/ffmpeg-sox ffmpeg $@
 }
 
 nginx() {
@@ -123,8 +123,8 @@ nginx() {
     del_stopped $name
     ${RUNTIME} run -it -v ${NGINX_HOME}/server.conf:/etc/nginx/conf.d/default.conf:ro \
         -v ${NGINX_HOME}/certs/:/etc/nginx/certs:ro \
-        -v ${NGINX_HOME}/nginx-www/:/var/www \
-        -v ${NGINX_HOME}/nginx-www-ssl/:/var/www-ssl -p 8443:443 -p 80:80 nginx:latest
+        -v ${NGINX_HOME}/nginx-www/:/var/www:Z \
+        -v ${NGINX_HOME}/nginx-www-ssl/:/var/www-ssl:Z -p 8443:443 -p 80:80 nginx:latest
 }
 
 sipp(){
@@ -136,7 +136,7 @@ sipp(){
     fi
 
     del_stopped $name
-    ${RUNTIME} run -it --rm --name sipp -v $(PWD):/data pbertera/sipp $@
+    ${RUNTIME} run -it --rm --name sipp -v $(PWD):/data:Z pbertera/sipp $@
 }
 
 text2pcap(){
@@ -148,7 +148,7 @@ text2pcap(){
     fi
 
     del_stopped $name
-    ${RUNTIME} run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
+    ${RUNTIME} run -it --rm --name $name -v $(PWD):/data:Z pbertera/$name $@
 }
 
 asciidoctor(){
@@ -160,7 +160,7 @@ asciidoctor(){
     fi
 
     del_stopped $name
-    ${RUNTIME} run -it --rm --name $name -v $(PWD):/data pbertera/$name $@
+    ${RUNTIME} run -it --rm --name $name -v $(PWD):/data:Z pbertera/$name $@
 }
 
 sngrep(){
@@ -172,7 +172,7 @@ sngrep(){
     fi
 
     del_stopped $name
-    ${RUNTIME} run -it --rm --name ${name} -v $(PWD):/data pbertera/${name} $@
+    ${RUNTIME} run -it --rm --name ${name} -v $(PWD):/data:Z pbertera/${name} $@
 }
 
 
@@ -185,7 +185,7 @@ convert(){
     fi
 
     del_stopped $name
-    ${RUNTIME} run -it --rm --name convert -v $(PWD):/data pbertera/imagemagick $@
+    ${RUNTIME} run -it --rm --name convert -v $(PWD):/data:Z pbertera/imagemagick $@
 }
 
 mz(){
@@ -248,12 +248,16 @@ easy-rsa(){
     fi
 
     del_stopped $name
-
+    if [ -d "$EASY_RSA_PKI" ]; then 
+        mkdir -p "$EASY_RSA_PKI"
+        echo EASYRSA_SSL_CONF=/er/openssl-easyrsa.cnf > "$EASY_RSA_PKI/vars"
+    fi
     if [ -f "$EASY_RSA_PKI/vars" ]; then
         env_file="--env-file $EASY_RSA_PKI/vars"
     fi
     # EASY_RSA_PKY must be a full path
-    ${RUNTIME} run --rm -it -v $EASY_RSA_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
+    ${RUNTIME} run --rm -it -v $EASY_RSA_PKI:/easy-rsa:Z ${env_file} --name ${name} pbertera/easy-rsa $@
+    echo "Easy rsa root dir is $EASY_RSA_PKI"
 }
 
 easy-rsa-root(){
@@ -266,12 +270,14 @@ easy-rsa-root(){
     fi
 
     del_stopped $name
+    [ -d "$EASY_RSA_ROOT_PKI" ] || mkdir -p "$EASY_RSA_ROOT_PKI"
 
     if [ -f "$EASY_RSA_ROOT_PKI/vars" ]; then
         env_file="--env-file $EASY_RSA_ROOT_PKI/vars"
     fi
     # EASY_RSA_PKY must be a full path
-    ${RUNTIME} run --rm -it -v $EASY_RSA_ROOT_PKI:/easy-rsa ${env_file} --name ${name} pbertera/easy-rsa $@
+    ${RUNTIME} run --rm -it -v $EASY_RSA_ROOT_PKI:/easy-rsa:Z ${env_file} --name ${name} pbertera/easy-rsa $@
+    echo "Easy rsa root dir is $EASY_RSA_ROOT_PKI"
 }
 
 nmap(){
@@ -387,7 +393,7 @@ irssi(){
     del_stopped $name
 
     ${RUNTIME} run -it --name irssi -e TERM --rm --log-driver=none \
-        -v $HOME/.irssi:/home/user/.irssi:rw irssi
+        -v $HOME/.irssi:/home/user/.irssi:rw,Z irssi
 }
 
 asterisk(){
@@ -399,7 +405,7 @@ asterisk(){
 
     del_stopped $name
 
-    ${RUNTIME} run -it --network host -v ${HOME}/.asterisk:/etc/asterisk -p 5060:5060/udp -p 10000-10010:10000-10010/udp pbertera/asterisk $@
+    ${RUNTIME} run -it --network host -v ${HOME}/.asterisk:/etc/asterisk:Z -p 5060:5060/udp -p 10000-10010:10000-10010/udp pbertera/asterisk $@
 }
 
 termshark(){
