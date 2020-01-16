@@ -1,11 +1,14 @@
 # configure the bash prompt using powerline-shell
 
-function _update_ps1() {
-    VTE_PWD_THING="$(__vte_osc7)"
-    PS1=$(powerline-shell $?)$VTE_PWD_THING
-}
+#function _update_ps1() {
+#    VTE_PWD_THING="$(__vte_osc7)"
+#    PS1=$(powerline-shell $?)$VTE_PWD_THING
+#}
 
 # Enable powerline-shell
-if [[ $TERM != linux && ! $PROMPT_COMMAND =~ _update_ps1 ]]; then
-    PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
-fi
+#if [[ $TERM != linux && ! $PROMPT_COMMAND =~ _update_ps1 ]]; then
+#    PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
+#fi
+
+# Powerline root
+. $(pip show powerline-status | grep Location | cut -d \  -f 2)//powerline/bindings/bash/powerline.sh
