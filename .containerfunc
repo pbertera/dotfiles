@@ -248,7 +248,7 @@ easy-rsa(){
     fi
 
     del_stopped $name
-    if [ -d "$EASY_RSA_PKI" ]; then 
+    if [ ! -d "$EASY_RSA_PKI" ]; then
         mkdir -p "$EASY_RSA_PKI"
         echo EASYRSA_SSL_CONF=/er/openssl-easyrsa.cnf > "$EASY_RSA_PKI/vars"
     fi
@@ -270,7 +270,10 @@ easy-rsa-root(){
     fi
 
     del_stopped $name
-    [ -d "$EASY_RSA_ROOT_PKI" ] || mkdir -p "$EASY_RSA_ROOT_PKI"
+    if [ ! -d "$EASY_RSA_ROOT_PKI" ]; then
+        mkdir -p "$EASY_ROOT_RSA_PKI"
+        echo EASYRSA_SSL_CONF=/er/openssl-easyrsa.cnf > "$EASY_RSA_ROOT_PKI/vars"
+    fi
 
     if [ -f "$EASY_RSA_ROOT_PKI/vars" ]; then
         env_file="--env-file $EASY_RSA_ROOT_PKI/vars"
