@@ -13,6 +13,11 @@ PASS_TOKEN_PIN_PATH="RH/token/pin"
 PASS_TOKEN_SECRET_PATH="RH/token/secret"
 # The Kerberos password
 PASS_KRB_PATH="RH/krb"
+# Hexchat network name
+# TODO: in case of multiple servers configured we should find a whay to detect the server in use
+IRC_NETWORK="irc.eng.brq.redhat.com"
+#IRC_NETWORK="chat.freenode.net" # test
+IRC_NICK="pbertera"
 
 # define colors in an array
 if [[ $BASH_VERSINFO -ge 4 ]]; then
@@ -26,6 +31,7 @@ if [[ $BASH_VERSINFO -ge 4 ]]; then
     c[purple]='\033[0;35m'; c[PURPLE]='\033[1;35m'; c[bg_PURPLE]='\033[45m'
     c[cyan]='\033[0;36m';   c[CYAN]='\033[1;36m';   c[bg_CYAN]='\033[46m'
 fi
+
 # print text to screen
 function print {
     # usage:
@@ -43,6 +49,21 @@ function print {
     } || {
         echo -e " [${c[$COLOR]}$VERB${c[reset]}] $MSG"
     }
+}
+
+# HINT: hexchat, use d-feet to browse the dbus interface
+
+function IRCSetContext {
+    local context=$(dbus-send --dest=org.hexchat.service --print-reply --type=method_call /org/hexchat/Remote org.hexchat.plugin.FindContext string:"$IRC_NETWORK" string:"" | tail -n1 | awk '{print $2}')
+    dbus-send --dest=org.hexchat.service --type=method_call /org/hexchat/Remote org.hexchat.plugin.SetContext uint32:$context
+}
+
+function IRCCommand {
+    if [ $# -eq 0 ]; then
+        print red ERROR $0 requires a command
+        exit 1
+    fi
+    dbus-send --dest=org.hexchat.service --type=method_call /org/hexchat/Remote org.hexchat.plugin.Command string:"$@"
 }
 
 # if the secret isn't found into the defined path will be added
@@ -131,6 +152,20 @@ case "$action" in
         echo "${TOKEN_PIN}$(genToken)" | xclip
         print orange INFO PIN+Token has been copied into the clipboard for 20 seconds
         sleep 20 && echo -n | xclip & 
+        ;;
+    ircNick)
+        shift
+        IRCSetContext
+        if [ $# -ne 0 ]; then
+            IRC_NICK="$IRC_NICK $@"
+        fi
+        print white INFO Changing nick to ${IRC_NICK// /|}
+        IRCCommand "nick ${IRC_NICK// /|}"
+        if [ "$1" == "gone" ] || [ "$1" == "away" ] || [ "$1" == "brb" ]; then
+            IRCCommand away
+        else
+            IRCCommand back
+        fi
         ;;
     *)
         usage
