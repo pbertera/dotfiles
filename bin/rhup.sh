@@ -138,6 +138,9 @@ case "$action" in
         isVpnUp || vpnUp
         echo "$KRB_PASS" | kinit "$KRB_ID">/dev/null
         status red
+        IRCSetContext
+        IRCCommand "nick $IRC_NICK"
+        IRCCommand back
         ;;
     down)
         isVpnUp && vpnDown
