@@ -18,6 +18,8 @@ PASS_KRB_PATH="RH/krb"
 IRC_NETWORK="irc.eng.brq.redhat.com"
 #IRC_NETWORK="chat.freenode.net" # test
 IRC_NICK="pbertera"
+# where to save the last IRC nickname
+NICKFILE=~/.lastnick
 
 # define colors in an array
 if [[ $BASH_VERSINFO -ge 4 ]]; then
@@ -139,6 +141,10 @@ case "$action" in
         echo "$KRB_PASS" | kinit "$KRB_ID">/dev/null
         status red
         IRCSetContext
+        sleep 5
+        if [ -e $NICKFILE ]; then
+            IRC_NICK=$(cat $NICKFILE)
+        fi
         IRCCommand "nick $IRC_NICK"
         IRCCommand back
         ;;
@@ -162,13 +168,25 @@ case "$action" in
         if [ $# -ne 0 ]; then
             IRC_NICK="$IRC_NICK $@"
         fi
-        print white INFO Changing nick to ${IRC_NICK// /|}
+        print orange INFO Changing nick to ${IRC_NICK// /|}
         IRCCommand "nick ${IRC_NICK// /|}"
+
+        # save the last nick
+        echo ${IRC_NICK// /|} > $NICKFILE
+
         if [ "$1" == "gone" ] || [ "$1" == "away" ] || [ "$1" == "brb" ]; then
             IRCCommand away
         else
             IRCCommand back
         fi
+        ;;
+    ircAway)
+        print orange INFO Setting IRC status away
+        IRCCommand away
+        ;;
+    ircBack)
+        print orange INFO Setting IRC status back
+        IRCCommand back
         ;;
     *)
         usage
