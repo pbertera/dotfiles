@@ -1,0 +1,49 @@
+#!/usr/bin/python
+
+import smtplib
+import getpass
+import sys
+
+msg = {}
+
+user_name = input("Enter your Gmail user name: ")
+if sys.stdin.isatty():
+    passwd = getpass.getpass('Enter your Gmail password:')
+else:
+    print('Enter your Gmail password:')
+    passwd = sys.stdin.readline().rstrip()
+from_email = input("Enter the From email: ")
+to_email = input("Enter the To email: ")
+subject = input("Enter the email subject: ")
+
+print("Enter/Paste your headers. Ctrl-D or Ctrl-Z ( windows ) to save it.")
+lines = ['From: ' + from_email, 'To: ' + to_email, 'Subject: ' + subject]
+while True:
+    try:
+        line = input()
+        if line == '.\n':
+            break
+    except EOFError:
+        break
+    lines.append(line)
+msg['headers'] = '\n'.join(lines)
+
+print("Enter/Paste your content. Ctrl-D or Ctrl-Z ( windows ) to save it.")
+lines = []
+while True:
+    try:
+        line = input()
+        if line == '.\n':
+            break
+    except EOFError:
+        break
+    lines.append(line)
+msg['body'] = '\n'.join(lines)
+
+server = smtplib.SMTP('smtp.gmail.com', 587)
+server.ehlo()
+server.starttls()
+server.login(user_name, passwd)
+
+server.sendmail(from_email, to_email, msg['headers'] + '\n' + msg['body'])
+server.close()
