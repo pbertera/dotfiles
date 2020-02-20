@@ -18,7 +18,7 @@ export EASY_RSA_ROOT_PKI=$HOME/.easy-rsa-root
 export NGINX_HOME=$HOME/.nginx
 
 #PATH
-export PATH=$PATH:$HOME/bin
+export PATH=$PATH:$HOME/bin:$HOME/bin/Telegram
 # GPG TTY
 export GPG_TTY=`tty`
 
@@ -37,3 +37,4 @@ export LANG="en_US.UTF-8";
 export LC_ALL="en_US.UTF-8";
 
 export PDNS_DB=$HOME/.pdns/pdns.db
+export NPM_PACKAGES="$HOME/.npm-packages"
