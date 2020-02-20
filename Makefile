@@ -20,5 +20,5 @@ dotfiles:
 config:
 	for file in $(shell find $(CURDIR)/config -type f -not -name ".*.swp"); do \
 		f=$$(basename $$file); \
-		ln -sf $$file $(HOME)/bin/$$f; \
+		ln -sf $$file $(HOME)/.config/$$f; \
 	done
