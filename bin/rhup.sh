@@ -89,9 +89,6 @@ function IRCCommand {
 # if yes, return the nick suffix to use when in a meeting
 function isMeetingActive {
     pidof $MEETING_PROGRAMS &> /dev/null
-    if [ $? -eq 0 ]; then
-        echo $MEETING_SUFFIX
-    fi
 }
 
 # check the status of the systemd timer monitoring the nick
@@ -225,18 +222,36 @@ case "$action" in
         print orange INFO Changing nick to ${IRC_NICK// /|}
         IRCCommand "nick ${IRC_NICK// /|}"
 
+        if [ "$1" == "gone" ] || [ "$1" == "away" ] || [ "$1" == "brb" ]; then
+            # mark me as away
+            IRCCommand away
+            # stop the nick monitor
+            stopSystemdIRCMonitor
+        else
+            if [ -e $NICKFILE ]; then
+                # set back on IRC if the previous nick was with away/gone/brb
+                grep -e away -e gone -e brb $NICKFILE &>/dev/null
+                if [ $? -eq 0 ]; then
+                    # start the nick monitor
+                    startSystemdIRCMonitor
+                    IRCCommand back
+                fi
+            fi
+        fi
         # save the last nick
         echo ${IRC_NICK// /|} > $NICKFILE
 
-        if [ "$1" == "gone" ] || [ "$1" == "away" ] || [ "$1" == "brb" ]; then
-            IRCCommand away
-        else
-            IRCCommand back
-        fi
         ;;
     ircNickAuto)
         shift
-        $0 ircNick $(isMeetingActive)
+        isMeetingActive
+        if [ $? -eq 0 ]; then # I'm in a meeting set the meeting suffix
+            $0 ircNick $MEETING_SUFFIX
+        else # meeting programs are not running
+            # if the old nick was with the meeting suffix reset the nick
+            grep $MEETING_SUFFIX $NICKFILE &>/dev/null && $0 ircNick
+        fi
+        exit 0
         ;;
     startSystemdIRCMonitor)
         shift
