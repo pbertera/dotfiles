@@ -2,7 +2,15 @@
 # This script starts the VPN with NetworkManager using the 2FA
 # All the required secrets (Tocken PIN and secret, Kerberos password)
 # are stored into a pass (https://www.passwordstore.org/) database
-
+#
+# TODO:
+#
+# * use keepassxc-cli for secrets and geting the OTP
+# * use an USB drive with the secrets
+# * temporary nicknames, use zenity to ask the user if we should revert to the default nick
+# * use notify-send to send desktop notification
+# * login on the rhportal
+#
 # Name of the VPN connection
 VPN_CONNECTION="Brno (BRQ)"
 # Your Kerberos ID
@@ -17,9 +25,18 @@ PASS_KRB_PATH="RH/krb"
 # TODO: in case of multiple servers configured we should find a whay to detect the server in use
 IRC_NETWORK="irc.eng.brq.redhat.com"
 #IRC_NETWORK="chat.freenode.net" # test
+# Default nickname on $IRC_NETWORK
 IRC_NICK="pbertera"
 # where to save the last IRC nickname
 NICKFILE=~/.lastnick
+# when these programs are running I'm in a meeting
+MEETING_PROGRAMS="bluejeans-v2 cheese"
+# meeting IRC nick suffix
+MEETING_SUFFIX=mtg
+# name of the systemd timer to monitor the nick
+SYSTEMD_IRC_NICK_MONITOR=autoIRCnickMonitor
+# value of --on-calendar option of systemd-run used to register the timer to check if I'm in a meeting
+SYSTEMD_IRC_NICK_MONITOR_FREQ='*-*-* *:*:00'
 
 # define colors in an array
 if [[ $BASH_VERSINFO -ge 4 ]]; then
@@ -66,6 +83,37 @@ function IRCCommand {
         exit 1
     fi
     dbus-send --dest=org.hexchat.service --type=method_call /org/hexchat/Remote org.hexchat.plugin.Command string:"$@"
+}
+
+# check if one of the programs defined by MTG_PROGRAMS is running
+# if yes, return the nick suffix to use when in a meeting
+function isMeetingActive {
+    pidof $MEETING_PROGRAMS &> /dev/null
+    if [ $? -eq 0 ]; then
+        echo $MEETING_SUFFIX
+    fi
+}
+
+# check the status of the systemd timer monitoring the nick
+# if not running will be started
+function startSystemdIRCMonitor {
+    systemctl --user status "${SYSTEMD_IRC_NICK_MONITOR}.timer" &> /dev/null
+    if [ $? -ne 0 ]; then
+        systemd-run --user --on-calendar="$SYSTEMD_IRC_NICK_MONITOR_FREQ" --unit="$SYSTEMD_IRC_NICK_MONITOR" ${BASH_SOURCE[1]} ircNickAuto
+        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} started
+    else
+        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} running
+    fi
+}
+
+function stopSystemdIRCMonitor {
+    systemctl --user status "${SYSTEMD_IRC_NICK_MONITOR}.timer" &> /dev/null
+    if [ $? -eq 0 ]; then
+        systemctl --user stop ${SYSTEMD_IRC_NICK_MONITOR}.timer
+        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} stopped
+    else
+        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} not running
+    fi
 }
 
 # if the secret isn't found into the defined path will be added
@@ -122,6 +170,10 @@ function status {
     else
         print $fatalColor INFO Kerberos token not present
     fi
+    systemctl --user status "${SYSTEMD_IRC_NICK_MONITOR}.timer"
+    if [ $? -ne 0 ]; then
+        print orange WARNING systemd timer ${SYSTEMD_IRC_NICK_MONITOR} not running
+    fi
 }
 
 action="$1"
@@ -147,10 +199,12 @@ case "$action" in
         fi
         IRCCommand "nick $IRC_NICK"
         IRCCommand back
+        startSystemdIRCMonitor
         ;;
     down)
         isVpnUp && vpnDown
         kdestroy
+        stopSystemdIRCMonitor
         status
         ;;
     status)
@@ -179,6 +233,18 @@ case "$action" in
         else
             IRCCommand back
         fi
+        ;;
+    ircNickAuto)
+        shift
+        $0 ircNick $(isMeetingActive)
+        ;;
+    startSystemdIRCMonitor)
+        shift
+        startSystemdIRCMonitor
+        ;;
+    stopSystemdIRCMonitor)
+        shift
+        stopSystemdIRCMonitor
         ;;
     ircAway)
         print orange INFO Setting IRC status away
