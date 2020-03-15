@@ -147,10 +147,6 @@ function setup {
     KRB_PASS=$(getPass "$PASS_KRB_PATH")
 }
 
-function usage {
-    print red INFO $0 "<up|down|status|getToken|refresh|ircNick>"
-}
-
 function status {
     fatalColor=$1
     fatalColor=${fatalColor:-orange}
@@ -173,14 +169,55 @@ function status {
     fi
 }
 
+function usage {
+    cat << EOF
+
+Usage: $0 <action>
+
+Actions:
+
+- up:   * activate the VPN using Network Manager, the VPN name is defined by the VPN_CONNECTION variable
+        * initializes the Kerberos token, the token id is defined via the KRB_ID variable
+        * connects HexChat to the IRC network (HexChat must be already configured), the network is selected by the IRC server defined with IRC_NETWORK
+        * the IRC nick is defined to via the variable IRC_NICK, if a nick was saved into the file NICKFILE the old nick is preserved
+        * starts the systemd timer defined by SYSTEMD_IRC_NICK_MONITOR. You can see it via the 'systemctl --user list-timers' command
+        * see the action 'startSystemdIRCMonitor' for more info about the timer
+
+- down: * deactivate the VPN
+        * the kerberos ticket is destroyed
+        * the systemd timer is stopped
+
+- status:   * print the current status
+
+- getToken: * the OTP token is copied into the clipboard for 20 seconds
+
+- ircNick:  * adds a suffix to the nick defined by IRC_NICK, if the suffix contains 'away', 'gone' or 'brb' sets you away on IRC.
+            * if you are set away the systemd timer is deactivated
+
+- ircAway:  * sets you away on IRC
+
+- ircBack:  * sets you back on IRC
+
+- ircNickAuto:  * checks if one the programs defined by MEETING_PROGRAMS is running  and in case adds the IRC nick suffix defined by MEETING_SUFFIX
+
+- startSystemdIRCMonitor:   * activate a systemd timer triggering the command '$0 ircNickAuto'.
+                            * the frequency of the timer is defined by SYSTEMD_IRC_NICK_MONITOR_FREQ
+                            * the unit name is defined by SYSTEMD_IRC_NICK_MONITOR_FREQ
+
+- stopSystemdIRCMonitor:    * removes the systemd timer activated by 'startSystemdIRCMonitor'
+EOF
+    exit 1
+
+}
+
 action="$1"
 
 case "$action" in
-    vpnup)
+    vpnUp)
         setup
         vpnUp
         ;;
-    vpndown)
+    vpnDown)
         setup
         vpnDown
         ;;
