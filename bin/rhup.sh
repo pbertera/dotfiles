@@ -31,12 +31,14 @@ IRC_NICK="pbertera"
 NICKFILE=~/.lastnick
 # when these programs are running I'm in a meeting
 MEETING_PROGRAMS="bluejeans-v2 cheese"
+# when on of these devices are in use I'm in a meeting
+MEETING_DEVICES="/dev/video0 /dev/video1"
 # meeting IRC nick suffix
 MEETING_SUFFIX=mtg
 # name of the systemd timer to monitor the nick
-SYSTEMD_IRC_NICK_MONITOR=autoIRCnickMonitor
+SYSTEMD_MONITOR=autoIRCnickMonitor
 # value of --on-calendar option of systemd-run used to register the timer to check if I'm in a meeting
-SYSTEMD_IRC_NICK_MONITOR_FREQ='*-*-* *:*:00'
+SYSTEMD_MONITOR_FREQ='*-*-* *:*:00'
 
 # define colors in an array
 if [[ $BASH_VERSINFO -ge 4 ]]; then
@@ -88,28 +90,30 @@ function IRCCommand {
 # check if one of the programs defined by MTG_PROGRAMS is running
 # if yes, return the nick suffix to use when in a meeting
 function isMeetingActive {
-    pidof $MEETING_PROGRAMS &> /dev/null
+    pidof $MEETING_PROGRAMS &> /dev/null && return 0
+    fuser $MEETING_DEVICES &> /dev/null && return 0
+    return 1
 }
 
 # check the status of the systemd timer monitoring the nick
 # if not running will be started
-function startSystemdIRCMonitor {
-    systemctl --user status "${SYSTEMD_IRC_NICK_MONITOR}.timer" &> /dev/null
+function startSystemdMonitor {
+    systemctl --user status "${SYSTEMD_MONITOR}.timer" &> /dev/null
     if [ $? -ne 0 ]; then
-        systemd-run --user --on-calendar="$SYSTEMD_IRC_NICK_MONITOR_FREQ" --unit="$SYSTEMD_IRC_NICK_MONITOR" ${BASH_SOURCE[1]} ircNickAuto
-        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} started
+        systemd-run --user --on-calendar="$SYSTEMD_MONITOR_FREQ" --unit="$SYSTEMD_MONITOR" ${BASH_SOURCE[1]} ircNickAuto
+        print orange INFO systemd timer ${SYSTEMD_MONITOR} started
     else
-        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} running
+        print orange INFO systemd timer ${SYSTEMD_MONITOR} running
     fi
 }
 
-function stopSystemdIRCMonitor {
-    systemctl --user status "${SYSTEMD_IRC_NICK_MONITOR}.timer" &> /dev/null
+function stopSystemdMonitor {
+    systemctl --user status "${SYSTEMD_MONITOR}.timer" &> /dev/null
     if [ $? -eq 0 ]; then
-        systemctl --user stop ${SYSTEMD_IRC_NICK_MONITOR}.timer
-        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} stopped
+        systemctl --user stop ${SYSTEMD_MONITOR}.timer
+        print orange INFO systemd timer ${SYSTEMD_MONITOR} stopped
     else
-        print orange INFO systemd timer ${SYSTEMD_IRC_NICK_MONITOR} not running
+        print orange INFO systemd timer ${SYSTEMD_MONITOR} not running
     fi
 }
 
@@ -163,9 +167,9 @@ function status {
     else
         print $fatalColor INFO Kerberos token not present
     fi
-    systemctl --user status "${SYSTEMD_IRC_NICK_MONITOR}.timer"
+    systemctl --user status "${SYSTEMD_MONITOR}.timer"
     if [ $? -ne 0 ]; then
-        print orange WARNING systemd timer ${SYSTEMD_IRC_NICK_MONITOR} not running
+        print orange WARNING systemd timer ${SYSTEMD_MONITOR} not running
     fi
 }
 
@@ -180,8 +184,8 @@ Actions:
         * initializes the Kerberos token, the token id is defined via the KRB_ID variable
         * connects HexChat to the IRC network (HexChat must be already configured), the network is selected by the IRC server defined with IRC_NETWORK
         * the IRC nick is defined to via the variable IRC_NICK, if a nick was saved into the file NICKFILE the old nick is preserved
-        * starts the systemd timer defined by SYSTEMD_IRC_NICK_MONITOR. You can see it via the 'systemctl --user list-timers' command
-        * see the action 'startSystemdIRCMonitor' for more info about the timer
+        * starts the systemd timer defined by SYSTEMD_MONITOR. You can see it via the 'systemctl --user list-timers' command
+        * see the action 'startSystemdMonitor' for more info about the timer
 
 - down: * deactivate the VPN
         * the kerberos ticket is destroyed
@@ -200,11 +204,11 @@ Actions:
 
 - ircNickAuto:  * checks if one the programs defined by MEETING_PROGRAMS is running  and in case adds the IRC nick suffix defined by MEETING_SUFFIX
 
-- startSystemdIRCMonitor:   * activate a systemd timer triggering the command '$0 ircNickAuto'.
-                            * the frequency of the timer is defined by SYSTEMD_IRC_NICK_MONITOR_FREQ
-                            * the unit name is defined by SYSTEMD_IRC_NICK_MONITOR_FREQ
+- startSystemdMonitor:   * activate a systemd timer triggering the command '$0 ircNickAuto'.
+                            * the frequency of the timer is defined by SYSTEMD_MONITOR_FREQ
+                            * the unit name is defined by SYSTEMD_MONITOR_FREQ
 
-- stopSystemdIRCMonitor:    * removes the systemd timer activated by 'startSystemdIRCMonitor'
+- stopSystemdMonitor:    * removes the systemd timer activated by 'startSystemdMonitor'
 EOF
     exit 1
 
@@ -233,12 +237,12 @@ case "$action" in
         fi
         IRCCommand "nick $IRC_NICK"
         IRCCommand back
-        startSystemdIRCMonitor
+        startSystemdMonitor
         ;;
     down)
         isVpnUp && vpnDown
         kdestroy
-        stopSystemdIRCMonitor
+        stopSystemdMonitor
         status
         ;;
     status)
@@ -263,14 +267,14 @@ case "$action" in
             # mark me as away
             IRCCommand away
             # stop the nick monitor
-            stopSystemdIRCMonitor
+            stopSystemdMonitor
         else
             if [ -e $NICKFILE ]; then
                 # set back on IRC if the previous nick was with away/gone/brb
                 grep -e away -e gone -e brb $NICKFILE &>/dev/null
                 if [ $? -eq 0 ]; then
                     # start the nick monitor
-                    startSystemdIRCMonitor
+                    startSystemdMonitor
                     IRCCommand back
                 fi
             fi
@@ -284,19 +288,21 @@ case "$action" in
         isMeetingActive
         if [ $? -eq 0 ]; then # I'm in a meeting set the meeting suffix
             $0 ircNick $MEETING_SUFFIX
+            blink1-tool --red
         else # meeting programs are not running
             # if the old nick was with the meeting suffix reset the nick
             grep $MEETING_SUFFIX $NICKFILE &>/dev/null && $0 ircNick
+            blink1-tool --green
         fi
         exit 0
         ;;
-    startSystemdIRCMonitor)
+    startSystemdMonitor)
         shift
-        startSystemdIRCMonitor
+        startSystemdMonitor
         ;;
-    stopSystemdIRCMonitor)
+    stopSystemdMonitor)
         shift
-        stopSystemdIRCMonitor
+        stopSystemdMonitor
         ;;
     ircAway)
         print orange INFO Setting IRC status away
