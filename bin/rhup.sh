@@ -12,7 +12,7 @@
 # * login on the rhportal
 #
 # Name of the VPN connection
-VPN_CONNECTION="Brno (BRQ)"
+VPN_CONNECTION="1 - Red Hat Global VPN"
 # Your Kerberos ID
 KRB_ID="pbertera@REDHAT.COM"
 # The token PIN
@@ -30,9 +30,9 @@ IRC_NICK="pbertera"
 # where to save the last IRC nickname
 NICKFILE=~/.lastnick
 # when these programs are running I'm in a meeting
-MEETING_PROGRAMS="bluejeans-v2 cheese"
+MEETING_PROGRAMS="bluejeans-v2"
 # when on of these devices are in use I'm in a meeting
-MEETING_DEVICES="/dev/video0 /dev/video1"
+MEETING_DEVICES="/dev/video*"
 # meeting IRC nick suffix
 MEETING_SUFFIX=mtg
 # name of the systemd timer to monitor the nick
@@ -167,7 +167,7 @@ function status {
     else
         print $fatalColor INFO Kerberos token not present
     fi
-    systemctl --user status "${SYSTEMD_MONITOR}.timer"
+    systemctl --user status "${SYSTEMD_MONITOR}.timer" --no-pager
     if [ $? -ne 0 ]; then
         print orange WARNING systemd timer ${SYSTEMD_MONITOR} not running
     fi
@@ -285,6 +285,7 @@ case "$action" in
         ;;
     ircNickAuto)
         shift
+        isVpnUp || blink1-tool --magenta --blink 3
         isMeetingActive
         if [ $? -eq 0 ]; then # I'm in a meeting set the meeting suffix
             $0 ircNick $MEETING_SUFFIX
@@ -292,7 +293,7 @@ case "$action" in
         else # meeting programs are not running
             # if the old nick was with the meeting suffix reset the nick
             grep $MEETING_SUFFIX $NICKFILE &>/dev/null && $0 ircNick
-            blink1-tool --green
+            blink1-tool --off
         fi
         exit 0
         ;;
