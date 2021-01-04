@@ -17,3 +17,4 @@ fi
 PATH=$PATH:$HOME/.local/bin:$HOME/bin
 
 export PATH
+export VMWARE_USE_SHIPPED_LIBS=force
