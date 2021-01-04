@@ -13,6 +13,7 @@
 #
 # Name of the VPN connection
 VPN_CONNECTION="1 - Red Hat Global VPN"
+#VPN_CONNECTION="Amsterdam (AMS2)"
 # Your Kerberos ID
 KRB_ID="pbertera@REDHAT.COM"
 # The token PIN
@@ -21,6 +22,8 @@ PASS_TOKEN_PIN_PATH="RH/token/pin"
 PASS_TOKEN_SECRET_PATH="RH/token/secret"
 # The Kerberos password
 PASS_KRB_PATH="RH/krb"
+# The SSO password
+PASS_SSO_PATH="RH/sso"
 # Hexchat network name
 # TODO: in case of multiple servers configured we should find a whay to detect the server in use
 IRC_NETWORK="irc.eng.brq.redhat.com"
@@ -39,6 +42,8 @@ MEETING_SUFFIX=mtg
 SYSTEMD_MONITOR=autoIRCnickMonitor
 # value of --on-calendar option of systemd-run used to register the timer to check if I'm in a meeting
 SYSTEMD_MONITOR_FREQ='*-*-* *:*:00'
+# SSH command to login on supportshell
+SUPPPORTSHELL="ssh -S ~/.ssh/supportshell supportshell"
 
 # define colors in an array
 if [[ $BASH_VERSINFO -ge 4 ]]; then
@@ -149,6 +154,8 @@ function setup {
     TOKEN_PIN=$(getPass "$PASS_TOKEN_PIN_PATH")
     TOKEN_SECRET=$(getPass "$PASS_TOKEN_SECRET_PATH")
     KRB_PASS=$(getPass "$PASS_KRB_PATH")
+    SSO_USER=$(getPass "$PASS_SSO_PATH" | tail -n1)
+    SSO_PASS=$(getPass "$PASS_SSO_PATH" | head -n1)
 }
 
 function status {
@@ -195,7 +202,7 @@ Actions:
 
 - getToken: * the OTP token is copied into the clipboard for 20 seconds
 
-- ircNick:  * adds a suffix to the nick defined by IRC_NICK, if the suffix contains 'away', 'gone' or 'brb' sets you away on IRC.
+- ircNick:  * adds a suffix to the nick defined by IRC_NICK, if the suffix contains 'away', 'gone', 'PTO' or 'brb' sets you away on IRC.
             * if you are set away the systemd timer is deactivated
 
 - ircAway:  * sets you away on IRC
@@ -254,6 +261,15 @@ case "$action" in
         print orange INFO PIN+Token has been copied into the clipboard for 20 seconds
         sleep 20 && echo -n | xclip & 
         ;;
+    yank)
+        shift
+        if [ "$1" == "" ]; then
+            print red ERROR: yank command requires a case number
+        fi
+        setup
+        $SUPPORTSHELL "echo -ne '$SSO_USER\n$SSO_PASS' | yank -y $1"
+        $SUPPORTSHELL
+        ;;
     ircNick)
         shift
         IRCSetContext
@@ -263,7 +279,7 @@ case "$action" in
         print orange INFO Changing nick to ${IRC_NICK// /|}
         IRCCommand "nick ${IRC_NICK// /|}"
 
-        if [ "$1" == "gone" ] || [ "$1" == "away" ] || [ "$1" == "brb" ]; then
+        if [ "$1" == "gone" ] || [ "$1" == "away" ] || [ "$1" == "PTO" ] || [ "$1" == "brb" ]; then
             # mark me as away
             IRCCommand away
             # stop the nick monitor
@@ -271,7 +287,7 @@ case "$action" in
         else
             if [ -e $NICKFILE ]; then
                 # set back on IRC if the previous nick was with away/gone/brb
-                grep -e away -e gone -e brb $NICKFILE &>/dev/null
+                grep -e away -e gone -e PTO -e brb $NICKFILE &>/dev/null
                 if [ $? -eq 0 ]; then
                     # start the nick monitor
                     startSystemdMonitor
